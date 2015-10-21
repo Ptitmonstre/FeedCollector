@@ -116,13 +116,7 @@ public class FeedReader {
 	private static void printFeed(SyndFeed feed) {
 		List<SyndEntry> entries = feed.getEntries();
 		ByteArrayOutputStream b = new ByteArrayOutputStream();
-//		String dir = System.getProperty("user.dir");
-//		try {
-//			DetectorFactory.loadProfile(dir+"/profiles");
-//		} catch (LangDetectException e1) {
-//			e1.printStackTrace();
-//		}
-//		
+
 		ObjectOutputStream o;
 		try {
 			o = new ObjectOutputStream(b);		
@@ -130,7 +124,7 @@ public class FeedReader {
 				//Creating a hash of the message
 				o.writeObject(e);
 				System.out.print("Hash: "+b.toByteArray().toString());
-				System.out.print(", URL: "+e.getUri());
+				System.out.print(", URL: "+e.getLink());
 				Tika tika=new Tika();
 				try {
 					URL url = new URL(e.getLink());
