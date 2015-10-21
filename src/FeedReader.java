@@ -19,6 +19,12 @@ import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
 
+import de.l3s.boilerpipe.BoilerpipeProcessingException;
+import de.l3s.boilerpipe.extractors.ArticleSentencesExtractor;
+
+import org.apache.tika.Tika;
+import org.apache.tika.exception.TikaException;
+import org.codehaus.plexus.util.StringInputStream;
 import org.mapdb.*;
 
 /**
@@ -96,6 +102,7 @@ public class FeedReader {
 				SyndFeed feed = input.build(new XmlReader(feedUrl));
 				printFeed(feed);
 			}
+			br.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -109,29 +116,57 @@ public class FeedReader {
 	private static void printFeed(SyndFeed feed) {
 		List<SyndEntry> entries = feed.getEntries();
 		ByteArrayOutputStream b = new ByteArrayOutputStream();
-		// Loading profile for LangDetector
+//		String dir = System.getProperty("user.dir");
+//		try {
+//			DetectorFactory.loadProfile(dir+"/profiles");
+//		} catch (LangDetectException e1) {
+//			e1.printStackTrace();
+//		}
+//		
 		ObjectOutputStream o;
 		try {
-			o = new ObjectOutputStream(b);
-			for (SyndEntry e : entries) {
-				// Creating a hash of the message
+			o = new ObjectOutputStream(b);		
+			for(SyndEntry e:entries){
+				//Creating a hash of the message
 				o.writeObject(e);
-				System.out.print("Hash: " + b.toByteArray().toString());
-				System.out.print(", URL: " + e.getUri());
-				System.out.print(", Source: " + e.getSource());
-				System.out.print(", Date: " + e.getPublishedDate());
-				System.out.print(", Title: " + e.getTitle());
-				System.out.print(", Description: " + e.getDescription());
-
+				System.out.print("Hash: "+b.toByteArray().toString());
+				System.out.print(", URL: "+e.getUri());
+				Tika tika=new Tika();
 				try {
-					// Detector creation and exploitation
-					detector = DetectorFactory.create();
-					detector.append(e.getUri() + " " + e.getTitle() + " " + e.getDescription());
-					System.out.print("Language : " + detector.detect() + "\n");
+					URL url = new URL(e.getLink());
+					InputStream is = url.openStream();  // throws an IOException
+					byte[] b1=new byte[1024];
+					int n=0;
+					ByteArrayOutputStream bos=new ByteArrayOutputStream();
+					while((n=is.read(b1, 0, 1024))!=-1){
+						bos.write(n);
+					}
+					byte[] srcContent=bos.toByteArray();
+					String content="";//TODO
+					
+					if(! tika.detect(srcContent).contains("html")){
+						content="";//tika.parseToString(new StringInputStream(new String(srcContent, "UTF-8")));
+					}
+					try {
+						System.out.print(", URL-content: "+ArticleSentencesExtractor.INSTANCE.getText(content));						
+					} catch (BoilerpipeProcessingException e1) {
+						e1.printStackTrace();
+					}
+				} catch (Exception e2) {
+					e2.printStackTrace();
+				}
+				if(e.getSource()!=null){System.out.print(", Source: "+e.getSource());}
+				System.out.print(", Date: "+e.getPublishedDate());
+				System.out.print(", Title: "+e.getTitle());
+//				System.out.print(", Description: "+e.getDescription());
+				try {
+					Detector detector = DetectorFactory.create();
+					detector.append(e.getSource()+" "+e.getTitle()+" "+e.getDescription());
+					System.out.println(", Language: "+detector.detect());
 				} catch (LangDetectException e1) {
+					System.out.println("Couldnt detect the language");
 					e1.printStackTrace();
 				}
-
 			}
 		} catch (IOException e2) {
 			System.err.println("Error creating the messages hashes");
