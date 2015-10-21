@@ -8,6 +8,7 @@ public class MRIEntry{
 	private String description;
 	private String author;
 	private String date;
+	private String content;
 	private String url_src;
 	private String txt_src;
 	private String language;
@@ -15,7 +16,7 @@ public class MRIEntry{
 	private String hash;
 	private MessageDigest md;
 	
-	public MRIEntry(String title, String description, String author, String date, String url_src, String txt_src,
+	public MRIEntry(String title, String description, String content, String author, String date, String url_src, String txt_src,
 			String language, String copyright) {
 		super();
 		this.title = title;
@@ -94,6 +95,12 @@ public class MRIEntry{
 	public void setHash(String hash) {
 		this.hash = hash;
 	}	
+	public String getContent() {
+		return content;
+	}
+	public void setContent(String content) {
+		this.content = content;
+	}
 	
 	public String toString(){
 		String ret = "";
@@ -104,7 +111,8 @@ public class MRIEntry{
 		ret += "\tLink : "+this.getUrl_src();
 		ret += "\tDesc : "+this.getDescription();
 		ret += "\tAuthor : "+this.getAuthor();
-		ret += "\tText : "+this.getTxt_src();
+		ret += "\tText : "+this.getContent();
+		ret += "\tSources : "+this.getTxt_src();
 		ret += "\tDate : "+this.getDate();
 		ret += "\tCopyright : "+this.getCopyright()+"}";
 		
