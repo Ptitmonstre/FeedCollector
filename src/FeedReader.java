@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +9,7 @@ import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.concurrent.ConcurrentNavigableMap;
 
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
@@ -16,6 +18,8 @@ import com.sun.syndication.feed.synd.SyndEntry;
 import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
+
+import org.mapdb.*;
 
 /**
  * RSS Feed Reader
@@ -33,7 +37,15 @@ public class FeedReader {
 	 * Detector object
 	 */
 	private static Detector detector = null;
-
+	/**
+	 * Database
+	 */
+	private static DB db;
+	/**
+	 * Map DB
+	 */
+	private static ConcurrentNavigableMap treeMap;
+	
 	/**
 	 * Main fonction
 	 * 
@@ -42,13 +54,26 @@ public class FeedReader {
 	public static void main(String[] args) {
 
 		// Proxy configuration
-		System.setProperty("http.proxySet", "true");
+		/*System.setProperty("http.proxySet", "true");
 		System.setProperty("http.proxyHost", "squidva.univ-ubs.fr");
 		System.setProperty("http.proxyPort", "3128");
-		System.setProperty("http.proxyType", "4");
+		System.setProperty("http.proxyType", "4");*/
+		
+		
 
 		if (args.length != 1)
 			System.exit(1);
+		
+		//MapDB initialisation
+		db = DBMaker.newMemoryDB().make();
+		treeMap = db.getTreeMap("map");
+		
+		//Ajout en DB : 
+		//treeMap.put(hash, object)
+		//db.commit();
+		
+		//fermeture de la DB:
+		//db.close();
 
 		// Setting the path for Langdetector
 		String dir = System.getProperty("user.dir");
