@@ -121,10 +121,23 @@ public class FeedReader {
 		try {
 			o = new ObjectOutputStream(b);		
 			for(SyndEntry e:entries){
+				
+				String title ="", description="", author="", txtcontent="", date="", url_src = "", txt_src= "", language = "", copyright="";
+				
 				//Creating a hash of the message
 				o.writeObject(e);
+<<<<<<< HEAD
 				System.out.print("Hash: "+b.toByteArray().toString());
 				System.out.print(", URL: "+e.getLink());
+=======
+				//System.out.print("Hash: "+b.toByteArray().toString());
+				//System.out.print(", URL: "+e.getUri());
+				
+				//URL Source
+				url_src = e.getLink();
+				
+				
+>>>>>>> branch 'master' of https://github.com/Ptitmonstre/FeedCollector.git
 				Tika tika=new Tika();
 				try {
 					URL url = new URL(e.getLink());
@@ -142,25 +155,46 @@ public class FeedReader {
 						content="";//tika.parseToString(new StringInputStream(new String(srcContent, "UTF-8")));
 					}
 					try {
-						System.out.print(", URL-content: "+ArticleSentencesExtractor.INSTANCE.getText(content));						
+						
+						//Contenu de la page
+						txtcontent = ArticleSentencesExtractor.INSTANCE.getText(content);
+						
+						//System.out.print(", URL-content: "+ArticleSentencesExtractor.INSTANCE.getText(content));						
 					} catch (BoilerpipeProcessingException e1) {
 						e1.printStackTrace();
 					}
 				} catch (Exception e2) {
 					e2.printStackTrace();
 				}
-				if(e.getSource()!=null){System.out.print(", Source: "+e.getSource());}
-				System.out.print(", Date: "+e.getPublishedDate());
-				System.out.print(", Title: "+e.getTitle());
-//				System.out.print(", Description: "+e.getDescription());
+				if(e.getSource()!=null){
+					//Sources du texte
+					txt_src = e.getSource().toString();
+				}
+				
+				//Titre de l'article
+				title = e.getTitle();
+				
+				//Date de l'article
+				date = e.getPublishedDate().toString();
+				
+				//Description de l'article
+				description = e.getDescription().toString();
+					
 				try {
 					Detector detector = DetectorFactory.create();
 					detector.append(e.getSource()+" "+e.getTitle()+" "+e.getDescription());
-					System.out.println(", Language: "+detector.detect());
+					//System.out.println(", Language: "+detector.detect());
+					
+					//Langage de l'article
+					language = detector.detect();
+					
 				} catch (LangDetectException e1) {
 					System.out.println("Couldnt detect the language");
 					e1.printStackTrace();
 				}
+				
+				MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
+				System.out.println(entry.toString());
 			}
 		} catch (IOException e2) {
 			System.err.println("Error creating the messages hashes");
