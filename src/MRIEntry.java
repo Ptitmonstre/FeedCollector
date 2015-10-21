@@ -95,4 +95,20 @@ public class MRIEntry{
 		this.hash = hash;
 	}	
 	
+	public String toString(){
+		String ret = "";
+		
+		ret += "{Hash : "+this.getHash()+"}";
+		ret += "{Title : "+this.getTitle();
+		ret += "\tLanguage : "+this.getLanguage();
+		ret += "\tLink : "+this.getUrl_src();
+		ret += "\tDesc : "+this.getDescription();
+		ret += "\tAuthor : "+this.getAuthor();
+		ret += "\tText : "+this.getTxt_src();
+		ret += "\tDate : "+this.getDate();
+		ret += "\tCopyright : "+this.getCopyright()+"}";
+		
+		return ret;
+	}
+	
 }
