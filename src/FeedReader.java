@@ -1,16 +1,11 @@
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentNavigableMap;
 
@@ -22,15 +17,10 @@ import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
 
-import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.extractors.ArticleSentencesExtractor;
 
 import org.apache.tika.Tika;
-import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.IOUtils;
-import org.apache.tika.io.TikaInputStream;
-import org.apache.xmlbeans.impl.common.IOUtil;
-import org.codehaus.plexus.util.StringInputStream;
 import org.mapdb.*;
 
 /**
@@ -42,21 +32,14 @@ import org.mapdb.*;
 public class FeedReader {
 
 	/**
-	 * URL of the feed
-	 */
-	private URL url;
-	/**
-	 * Detector object
-	 */
-	private static Detector detector = null;
-	/**
 	 * Database
 	 */
 	private static DB db;
 	/**
 	 * Map DB
 	 */
-	private static ConcurrentNavigableMap treeMap;
+
+	private static ConcurrentNavigableMap<String, String> treeMap;
 
 	/**
 	 * Main fonction
@@ -78,13 +61,6 @@ public class FeedReader {
 		db = DBMaker.newMemoryDB().make();
 		treeMap = db.getTreeMap("map");
 
-		//Ajout en DB : 
-		//treeMap.put(hash, object)
-		//db.commit();
-
-		//fermeture de la DB:
-		//db.close();
-
 		// Setting the path for Langdetector
 		String dir = System.getProperty("user.dir");
 		System.out.println("current dir = " + dir);
@@ -105,11 +81,16 @@ public class FeedReader {
 				SyndFeedInput input = new SyndFeedInput();
 				SyndFeed feed = input.build(new XmlReader(feedUrl));
 				printFeed(feed);
+				//Ajout en DB : 
+				db.commit();
 			}
 			br.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+		//fermeture de la DB:
+		db.close();
 	}
 
 	/**
@@ -119,70 +100,65 @@ public class FeedReader {
 	 */
 	private static void printFeed(SyndFeed feed) {
 		List<SyndEntry> entries = feed.getEntries();
-		ByteArrayOutputStream b = new ByteArrayOutputStream();
 
-		ObjectOutputStream o;
-		try {
-			o = new ObjectOutputStream(b);		
-			for(SyndEntry e:entries){
+		for(SyndEntry e:entries){
 
-				String title ="", description="", author="", txtcontent="", date="", url_src = "", txt_src= "", language = "", copyright="";
+			String title ="", description="", author="", txtcontent="", date="", url_src = "", txt_src= "", language = "", copyright="";
 
-				//URL Source
-				url_src = e.getLink();
+			//URL Source
+			url_src = e.getLink();
 
-				Tika tika=new Tika();
-				try {
-					URL url = new URL(e.getLink());
-					
-					if(! tika.detect(url).contains("html")){
-						txtcontent=tika.parseToString(url);
-					}else{
-						
-						HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-						txtcontent=connection.getResponseMessage();
-						StringWriter wr=new StringWriter();
-						IOUtils.copy(connection.getInputStream(), wr, "utf-8");
-						txtcontent=wr.toString();
-						//Contenu de la page
-						txtcontent = ArticleSentencesExtractor.INSTANCE.getText(txtcontent).trim().replaceAll(" +|\n", " ");						
-					
-					}
-				} catch (Exception e2) {
-					e2.printStackTrace();
+			Tika tika=new Tika();
+			try {
+				URL url = new URL(e.getLink());
+
+				if(! tika.detect(url).contains("html")){
+					txtcontent=tika.parseToString(url);
+				}else{
+
+					HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+					txtcontent=connection.getResponseMessage();
+					StringWriter wr=new StringWriter();
+					IOUtils.copy(connection.getInputStream(), wr, "utf-8");
+					txtcontent=wr.toString();
+					//Contenu de la page
+					txtcontent = ArticleSentencesExtractor.INSTANCE.getText(txtcontent).trim().replaceAll(" +|\n", " ");						
+
 				}
-				if(e.getSource()!=null){
-					//Sources du texte
-					txt_src = e.getSource().toString();
-				}
-
-				//Titre de l'article
-				title = e.getTitle();
-
-				//Date de l'article
-				date = e.getPublishedDate().toString();
-
-				//Description de l'article
-				description = e.getDescription().toString();
-
-				try {
-					Detector detector = DetectorFactory.create();
-					detector.append(e.getSource()+" "+e.getTitle()+" "+e.getDescription());
-
-					//Langage de l'article
-					language = detector.detect();
-
-				} catch (LangDetectException e1) {
-					System.out.println("Couldnt detect the language");
-					e1.printStackTrace();
-				}
-
-				MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
-				System.out.println(entry.toString());
+			} catch (Exception e2) {
+				e2.printStackTrace();
 			}
-		} catch (IOException e2) {
-			System.err.println("Error creating the messages hashes");
-			e2.printStackTrace();
+			if(e.getSource()!=null){
+				//Sources du texte
+				txt_src = e.getSource().toString();
+			}
+
+			//Titre de l'article
+			title = e.getTitle();
+
+			//Date de l'article
+			date = e.getPublishedDate().toString();
+
+			//Description de l'article
+			description = e.getDescription().toString();
+
+			try {
+				Detector detector = DetectorFactory.create();
+				detector.append(e.getSource()+" "+e.getTitle()+" "+e.getDescription());
+
+				//Langage de l'article
+				language = detector.detect();
+
+			} catch (LangDetectException e1) {
+				System.out.println("Couldnt detect the language");
+				e1.printStackTrace();
+			}
+
+			MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
+			System.out.println(entry.toString());
+			//Ajout à la map : 
+			treeMap.put(entry.getHash(), entry.toMapString());
+
 		}
 	}
 
