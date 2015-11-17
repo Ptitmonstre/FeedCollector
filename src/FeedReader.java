@@ -1,11 +1,9 @@
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
+import java.io.StringWriter;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -19,12 +17,10 @@ import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
 
-import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.extractors.ArticleSentencesExtractor;
 
 import org.apache.tika.Tika;
-import org.apache.tika.exception.TikaException;
-import org.codehaus.plexus.util.StringInputStream;
+import org.apache.tika.io.IOUtils;
 import org.mapdb.*;
 
 /**
@@ -36,22 +32,15 @@ import org.mapdb.*;
 public class FeedReader {
 
 	/**
-	 * URL of the feed
-	 */
-	private URL url;
-	/**
-	 * Detector object
-	 */
-	private static Detector detector = null;
-	/**
 	 * Database
 	 */
 	private static DB db;
 	/**
 	 * Map DB
 	 */
+
 	private static ConcurrentNavigableMap<String, String> treeMap;
-	
+
 	/**
 	 * Main fonction
 	 * 
@@ -64,16 +53,14 @@ public class FeedReader {
 		System.setProperty("http.proxyHost", "squidva.univ-ubs.fr");
 		System.setProperty("http.proxyPort", "3128");
 		System.setProperty("http.proxyType", "4");*/
-		
-		
 
 		if (args.length != 1)
 			System.exit(1);
-		
+
 		//MapDB initialisation
 		db = DBMaker.newMemoryDB().make();
 		treeMap = db.getTreeMap("map");
-		
+
 		// Setting the path for Langdetector
 		String dir = System.getProperty("user.dir");
 		System.out.println("current dir = " + dir);
@@ -101,7 +88,7 @@ public class FeedReader {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		//fermeture de la DB:
 		db.close();
 	}
@@ -113,82 +100,65 @@ public class FeedReader {
 	 */
 	private static void printFeed(SyndFeed feed) {
 		List<SyndEntry> entries = feed.getEntries();
-		ByteArrayOutputStream b = new ByteArrayOutputStream();
 
-		ObjectOutputStream o;
-		try {
-			o = new ObjectOutputStream(b);		
-			for(SyndEntry e:entries){
-				
-				String title ="", description="", author="", txtcontent="", date="", url_src = "", txt_src= "", language = "", copyright="";
-				
-				//Creating a hash of the message
-				o.writeObject(e);
-				
-				Tika tika=new Tika();
-				try {
-					URL url = new URL(e.getLink());
-					InputStream is = url.openStream();  // throws an IOException
-					byte[] b1=new byte[1024];
-					int n=0;
-					ByteArrayOutputStream bos=new ByteArrayOutputStream();
-					while((n=is.read(b1, 0, 1024))!=-1){
-						bos.write(n);
-					}
-					byte[] srcContent=bos.toByteArray();
-					String content="";//TODO
-					
-					if(! tika.detect(srcContent).contains("html")){
-						content="";//tika.parseToString(new StringInputStream(new String(srcContent, "UTF-8")));
-					}
-					try {
-						
-						//Contenu de la page
-						txtcontent = ArticleSentencesExtractor.INSTANCE.getText(content);
-						
-						//System.out.print(", URL-content: "+ArticleSentencesExtractor.INSTANCE.getText(content));						
-					} catch (BoilerpipeProcessingException e1) {
-						e1.printStackTrace();
-					}
-				} catch (Exception e2) {
-					e2.printStackTrace();
+		for(SyndEntry e:entries){
+
+			String title ="", description="", author="", txtcontent="", date="", url_src = "", txt_src= "", language = "", copyright="";
+
+			//URL Source
+			url_src = e.getLink();
+
+			Tika tika=new Tika();
+			try {
+				URL url = new URL(e.getLink());
+
+				if(! tika.detect(url).contains("html")){
+					txtcontent=tika.parseToString(url);
+				}else{
+
+					HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+					txtcontent=connection.getResponseMessage();
+					StringWriter wr=new StringWriter();
+					IOUtils.copy(connection.getInputStream(), wr, "utf-8");
+					txtcontent=wr.toString();
+					//Contenu de la page
+					txtcontent = ArticleSentencesExtractor.INSTANCE.getText(txtcontent).trim().replaceAll(" +|\n", " ");						
+
 				}
-				if(e.getSource()!=null){
-					//Sources du texte
-					txt_src = e.getSource().toString();
-				}
-				
-				//Titre de l'article
-				title = e.getTitle();
-				
-				//Date de l'article
-				date = e.getPublishedDate().toString();
-				
-				//Description de l'article
-				description = e.getDescription().toString();
-					
-				try {
-					Detector detector = DetectorFactory.create();
-					detector.append(e.getSource()+" "+e.getTitle()+" "+e.getDescription());
-					//System.out.println(", Language: "+detector.detect());
-					
-					//Langage de l'article
-					language = detector.detect();
-					
-				} catch (LangDetectException e1) {
-					System.out.println("Couldnt detect the language");
-					e1.printStackTrace();
-				}
-				
-				MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
-				System.out.println(entry.toString());
-				//Ajout à la map : 
-				treeMap.put(entry.getHash(), entry.toMapString());
-				
+			} catch (Exception e2) {
+				e2.printStackTrace();
 			}
-		} catch (IOException e2) {
-			System.err.println("Error creating the messages hashes");
-			e2.printStackTrace();
+			if(e.getSource()!=null){
+				//Sources du texte
+				txt_src = e.getSource().toString();
+			}
+
+			//Titre de l'article
+			title = e.getTitle();
+
+			//Date de l'article
+			date = e.getPublishedDate().toString();
+
+			//Description de l'article
+			description = e.getDescription().toString();
+
+			try {
+				Detector detector = DetectorFactory.create();
+				detector.append(e.getSource()+" "+e.getTitle()+" "+e.getDescription());
+
+				//Langage de l'article
+				language = detector.detect();
+
+			} catch (LangDetectException e1) {
+				System.out.println("Couldnt detect the language");
+				e1.printStackTrace();
+			}
+
+			MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
+			System.out.println(entry.toString());
+			//Ajout à la map : 
+			treeMap.put(entry.getHash(), entry.toMapString());
+
 		}
 	}
 
