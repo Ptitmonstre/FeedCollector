@@ -1,8 +1,9 @@
+import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 
-public class MRIEntry{
+public class MRIEntry implements Serializable{
 
 	private String title;
 	private String description;
@@ -115,6 +116,23 @@ public class MRIEntry{
 		ret += "\tSources : "+this.getTxt_src();
 		ret += "\tDate : "+this.getDate();
 		ret += "\tCopyright : "+this.getCopyright()+"}";
+		
+		return ret;
+	}
+	
+	public String toMapString(){
+		String ret = "{";
+		
+		ret += "\n\t\"name\" : "+this.getHash();
+		ret += "\n\t\"title\" : "+this.getTitle();
+		ret += "\n\t\"language\" : "+this.getLanguage();
+		ret += "\n\t\"url_src\" : "+this.getUrl_src();
+		ret += "\n\t\"description\" : "+this.getDescription();
+		ret += "\n\t\"author\" : "+this.getAuthor();
+		ret += "\n\t\"content\" : "+this.getContent();
+		ret += "\n\t\"txt_src\" : "+this.getTxt_src();
+		ret += "\n\t\"date\" : "+this.getDate();
+		ret += "\n\t\"copyright\" : "+this.getCopyright()+"\n}";
 		
 		return ret;
 	}

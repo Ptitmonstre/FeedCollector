@@ -50,7 +50,7 @@ public class FeedReader {
 	/**
 	 * Map DB
 	 */
-	private static ConcurrentNavigableMap treeMap;
+	private static ConcurrentNavigableMap<String, String> treeMap;
 	
 	/**
 	 * Main fonction
@@ -74,13 +74,6 @@ public class FeedReader {
 		db = DBMaker.newMemoryDB().make();
 		treeMap = db.getTreeMap("map");
 		
-		//Ajout en DB : 
-		//treeMap.put(hash, object)
-		//db.commit();
-		
-		//fermeture de la DB:
-		//db.close();
-
 		// Setting the path for Langdetector
 		String dir = System.getProperty("user.dir");
 		System.out.println("current dir = " + dir);
@@ -101,11 +94,16 @@ public class FeedReader {
 				SyndFeedInput input = new SyndFeedInput();
 				SyndFeed feed = input.build(new XmlReader(feedUrl));
 				printFeed(feed);
+				//Ajout en DB : 
+				db.commit();
 			}
 			br.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		//fermeture de la DB:
+		db.close();
 	}
 
 	/**
@@ -126,18 +124,7 @@ public class FeedReader {
 				
 				//Creating a hash of the message
 				o.writeObject(e);
-<<<<<<< HEAD
-				System.out.print("Hash: "+b.toByteArray().toString());
-				System.out.print(", URL: "+e.getLink());
-=======
-				//System.out.print("Hash: "+b.toByteArray().toString());
-				//System.out.print(", URL: "+e.getUri());
 				
-				//URL Source
-				url_src = e.getLink();
-				
-				
->>>>>>> branch 'master' of https://github.com/Ptitmonstre/FeedCollector.git
 				Tika tika=new Tika();
 				try {
 					URL url = new URL(e.getLink());
@@ -195,6 +182,9 @@ public class FeedReader {
 				
 				MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
 				System.out.println(entry.toString());
+				//Ajout à la map : 
+				treeMap.put(entry.getHash(), entry.toMapString());
+				
 			}
 		} catch (IOException e2) {
 			System.err.println("Error creating the messages hashes");
