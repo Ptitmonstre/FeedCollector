@@ -27,6 +27,7 @@ public class MRIEntry{
 		this.txt_src = txt_src;
 		this.language = language;
 		this.copyright = copyright;
+		this.content=content;
 		try {
 			md = MessageDigest.getInstance("MD5");
 			//cryptage en md5. Cle choisie titre + url + langue
@@ -109,7 +110,7 @@ public class MRIEntry{
 		ret += "{Title : "+this.getTitle();
 		ret += "\tLanguage : "+this.getLanguage();
 		ret += "\tLink : "+this.getUrl_src();
-		ret += "\tDesc : "+this.getDescription();
+//		ret += "\tDesc : "+this.getDescription();
 		ret += "\tAuthor : "+this.getAuthor();
 		ret += "\tText : "+this.getContent();
 		ret += "\tSources : "+this.getTxt_src();

@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
+import java.io.StringWriter;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentNavigableMap;
 
@@ -24,6 +27,9 @@ import de.l3s.boilerpipe.extractors.ArticleSentencesExtractor;
 
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.io.IOUtils;
+import org.apache.tika.io.TikaInputStream;
+import org.apache.xmlbeans.impl.common.IOUtil;
 import org.codehaus.plexus.util.StringInputStream;
 import org.mapdb.*;
 
@@ -51,7 +57,7 @@ public class FeedReader {
 	 * Map DB
 	 */
 	private static ConcurrentNavigableMap treeMap;
-	
+
 	/**
 	 * Main fonction
 	 * 
@@ -64,20 +70,18 @@ public class FeedReader {
 		System.setProperty("http.proxyHost", "squidva.univ-ubs.fr");
 		System.setProperty("http.proxyPort", "3128");
 		System.setProperty("http.proxyType", "4");*/
-		
-		
 
 		if (args.length != 1)
 			System.exit(1);
-		
+
 		//MapDB initialisation
 		db = DBMaker.newMemoryDB().make();
 		treeMap = db.getTreeMap("map");
-		
+
 		//Ajout en DB : 
 		//treeMap.put(hash, object)
 		//db.commit();
-		
+
 		//fermeture de la DB:
 		//db.close();
 
@@ -121,47 +125,28 @@ public class FeedReader {
 		try {
 			o = new ObjectOutputStream(b);		
 			for(SyndEntry e:entries){
-				
+
 				String title ="", description="", author="", txtcontent="", date="", url_src = "", txt_src= "", language = "", copyright="";
-				
-				//Creating a hash of the message
-				o.writeObject(e);
-<<<<<<< HEAD
-				System.out.print("Hash: "+b.toByteArray().toString());
-				System.out.print(", URL: "+e.getLink());
-=======
-				//System.out.print("Hash: "+b.toByteArray().toString());
-				//System.out.print(", URL: "+e.getUri());
-				
+
 				//URL Source
 				url_src = e.getLink();
-				
-				
->>>>>>> branch 'master' of https://github.com/Ptitmonstre/FeedCollector.git
+
 				Tika tika=new Tika();
 				try {
 					URL url = new URL(e.getLink());
-					InputStream is = url.openStream();  // throws an IOException
-					byte[] b1=new byte[1024];
-					int n=0;
-					ByteArrayOutputStream bos=new ByteArrayOutputStream();
-					while((n=is.read(b1, 0, 1024))!=-1){
-						bos.write(n);
-					}
-					byte[] srcContent=bos.toByteArray();
-					String content="";//TODO
 					
-					if(! tika.detect(srcContent).contains("html")){
-						content="";//tika.parseToString(new StringInputStream(new String(srcContent, "UTF-8")));
-					}
-					try {
+					if(! tika.detect(url).contains("html")){
+						txtcontent=tika.parseToString(url);
+					}else{
 						
+						HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+						txtcontent=connection.getResponseMessage();
+						StringWriter wr=new StringWriter();
+						IOUtils.copy(connection.getInputStream(), wr, "utf-8");
+						txtcontent=wr.toString();
 						//Contenu de la page
-						txtcontent = ArticleSentencesExtractor.INSTANCE.getText(content);
-						
-						//System.out.print(", URL-content: "+ArticleSentencesExtractor.INSTANCE.getText(content));						
-					} catch (BoilerpipeProcessingException e1) {
-						e1.printStackTrace();
+						txtcontent = ArticleSentencesExtractor.INSTANCE.getText(txtcontent).trim().replaceAll(" +|\n", " ");						
+					
 					}
 				} catch (Exception e2) {
 					e2.printStackTrace();
@@ -170,29 +155,28 @@ public class FeedReader {
 					//Sources du texte
 					txt_src = e.getSource().toString();
 				}
-				
+
 				//Titre de l'article
 				title = e.getTitle();
-				
+
 				//Date de l'article
 				date = e.getPublishedDate().toString();
-				
+
 				//Description de l'article
 				description = e.getDescription().toString();
-					
+
 				try {
 					Detector detector = DetectorFactory.create();
 					detector.append(e.getSource()+" "+e.getTitle()+" "+e.getDescription());
-					//System.out.println(", Language: "+detector.detect());
-					
+
 					//Langage de l'article
 					language = detector.detect();
-					
+
 				} catch (LangDetectException e1) {
 					System.out.println("Couldnt detect the language");
 					e1.printStackTrace();
 				}
-				
+
 				MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
 				System.out.println(entry.toString());
 			}
