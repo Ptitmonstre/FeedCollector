@@ -25,7 +25,6 @@ import de.l3s.boilerpipe.extractors.ArticleSentencesExtractor;
 
 import org.apache.tika.Tika;
 import org.apache.tika.io.IOUtils;
-import org.mapdb.*;
 
 /**
  * RSS Feed Reader
