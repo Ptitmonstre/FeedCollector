@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,14 +57,15 @@ public class FeedReader {
 
 		if (args.length != 1)
 			System.exit(1);
+		
+		// Setting the path for Langdetector
+				String dir = System.getProperty("user.dir");
+				System.out.println("current dir = " + dir);
 
 		//MapDB initialisation
-		db = DBMaker.newMemoryDB().make();
+		db = DBMaker.newFileDB(new File( dir + "/db.out")).make();
 		treeMap = db.getTreeMap("map");
 
-		// Setting the path for Langdetector
-		String dir = System.getProperty("user.dir");
-		System.out.println("current dir = " + dir);
 		try {
 			DetectorFactory.loadProfile(dir + "/profiles");
 		} catch (LangDetectException e1) {

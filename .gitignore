@@ -6,3 +6,5 @@
 [Bb]uild/
 [Bb]in/
 /target/
+/.metadata/
+/.settings/

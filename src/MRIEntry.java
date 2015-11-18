@@ -138,7 +138,7 @@ public class MRIEntry implements Serializable{
 		ret += "\n\t\"content\" : "+this.getContent();
 		ret += "\n\t\"txt_src\" : "+this.getTxt_src();
 		ret += "\n\t\"date\" : "+this.getDate();
-		ret += "\n\t\"copyright\" : "+this.getCopyright()+"\n}";
+		ret += "\n\t\"copyright\" : "+this.getCopyright()+"\n}\n";
 		
 		return ret;
 	}
