@@ -126,19 +126,21 @@ public class MRIEntry implements Serializable{
 		return ret;
 	}
 	
-	public String toMapString(){
-		String ret = "{";
+	public String toXMLString(){
+		String ret = "<article>\n";
 		
-		ret += "\n\t\"name\" : "+this.getHash();
-		ret += "\n\t\"title\" : "+this.getTitle();
-		ret += "\n\t\"language\" : "+this.getLanguage();
-		ret += "\n\t\"url_src\" : "+this.getUrl_src();
-		ret += "\n\t\"description\" : "+this.getDescription();
-		ret += "\n\t\"author\" : "+this.getAuthor();
-		ret += "\n\t\"content\" : "+this.getContent();
-		ret += "\n\t\"txt_src\" : "+this.getTxt_src();
-		ret += "\n\t\"date\" : "+this.getDate();
-		ret += "\n\t\"copyright\" : "+this.getCopyright()+"\n}\n";
+		ret += "\t<name>"+this.getHash()+"</name>\n";
+		ret += "\t<title>"+this.getTitle()+"</title>\n";
+		ret += "\t<language>"+this.getLanguage()+"</language>\n";
+		ret += "\t<url_src>"+this.getUrl_src()+"</url_src>\n";
+		ret += "\t<description>"+this.getDescription()+"</description>\n";
+		ret += "\t<author>"+this.getAuthor()+"</author>\n";
+		ret += "\t<content>"+this.getContent()+"</content>\n";
+		ret += "\t<txt_src>"+this.getTxt_src()+"</txt_src>\n";
+		ret += "\t<date>"+this.getDate()+"</date>\n";
+		ret += "\t<copyright>"+this.getCopyright()+"</copyright>\n";
+		
+		ret += "</article>\n\n";
 		
 		return ret;
 	}

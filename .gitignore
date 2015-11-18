@@ -8,6 +8,4 @@
 /target/
 /.metadata/
 /.settings/
-db.out
-db.out.p
-db.out.t
+*.xml

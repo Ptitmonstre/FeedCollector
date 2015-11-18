@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -33,15 +36,20 @@ import org.mapdb.*;
 public class FeedReader {
 
 	/**
-	 * Database
+	 * XML File
 	 */
-	private static DB db;
+	static File fileDB;
+
 	/**
-	 * Map DB
+	 * FileWriter
 	 */
-
-	private static ConcurrentNavigableMap<String, String> treeMap;
-
+	static FileWriter fw;
+	
+	/**
+	 * BufferedWriter
+	 */
+	static BufferedWriter bw;
+	
 	/**
 	 * Main fonction
 	 * 
@@ -59,12 +67,18 @@ public class FeedReader {
 			System.exit(1);
 		
 		// Setting the path for Langdetector
-				String dir = System.getProperty("user.dir");
-				System.out.println("current dir = " + dir);
+		String dir = System.getProperty("user.dir");
+		System.out.println("current dir = " + dir);
 
 		//MapDB initialisation
-		db = DBMaker.newFileDB(new File( dir + "/db.out")).make();
-		treeMap = db.getTreeMap("map");
+		fileDB = new File( dir + "/db.xml");
+		
+		try {
+			fw = new FileWriter(fileDB.getAbsoluteFile());
+			bw = new BufferedWriter(fw);
+		} catch (IOException e2) {
+			e2.printStackTrace();
+		}	
 
 		try {
 			DetectorFactory.loadProfile(dir + "/profiles");
@@ -83,16 +97,12 @@ public class FeedReader {
 				SyndFeedInput input = new SyndFeedInput();
 				SyndFeed feed = input.build(new XmlReader(feedUrl));
 				printFeed(feed);
-				//Ajout en DB : 
-				db.commit();
 			}
 			br.close();
+			bw.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		//fermeture de la DB:
-		db.close();
 	}
 
 	/**
@@ -158,8 +168,12 @@ public class FeedReader {
 
 			MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
 			System.out.println(entry.toString());
-			//Ajout à la map : 
-			treeMap.put(entry.getHash(), entry.toMapString());
+			try {
+				bw.write(entry.toXMLString());
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 
 		}
 	}
