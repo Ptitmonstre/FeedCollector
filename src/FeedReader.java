@@ -1,9 +1,6 @@
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -11,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.concurrent.ConcurrentNavigableMap;
 
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
@@ -24,6 +22,8 @@ import de.l3s.boilerpipe.extractors.ArticleSentencesExtractor;
 
 import org.apache.tika.Tika;
 import org.apache.tika.io.IOUtils;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
 
 /**
  * RSS Feed Reader
@@ -34,20 +34,15 @@ import org.apache.tika.io.IOUtils;
 public class FeedReader {
 
 	/**
-	 * XML File
+	 * Database
 	 */
-	static File fileDB;
+	private static DB db;
+	/**
+	 * Map DB
+	 */
 
-	/**
-	 * FileWriter
-	 */
-	static FileWriter fw;
-	
-	/**
-	 * BufferedWriter
-	 */
-	static BufferedWriter bw;
-	
+	private static ConcurrentNavigableMap<String, String> treeMap;
+
 	/**
 	 * Main fonction
 	 * 
@@ -65,18 +60,12 @@ public class FeedReader {
 			System.exit(1);
 		
 		// Setting the path for Langdetector
-		String dir = System.getProperty("user.dir");
-		System.out.println("current dir = " + dir);
+				String dir = System.getProperty("user.dir");
+				System.out.println("current dir = " + dir);
 
 		//MapDB initialisation
-		fileDB = new File( dir + "/db.xml");
-		
-		try {
-			fw = new FileWriter(fileDB.getAbsoluteFile());
-			bw = new BufferedWriter(fw);
-		} catch (IOException e2) {
-			e2.printStackTrace();
-		}	
+		db = DBMaker.newFileDB(new File( dir + "/db.out")).make();
+		treeMap = db.getTreeMap("map");
 
 		try {
 			DetectorFactory.loadProfile(dir + "/profiles");
@@ -95,12 +84,16 @@ public class FeedReader {
 				SyndFeedInput input = new SyndFeedInput();
 				SyndFeed feed = input.build(new XmlReader(feedUrl));
 				printFeed(feed);
+				//Ajout en DB : 
+				db.commit();
 			}
 			br.close();
-			bw.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+		//fermeture de la DB:
+		db.close();
 	}
 
 	/**
@@ -166,12 +159,8 @@ public class FeedReader {
 
 			MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
 			System.out.println(entry.toString());
-			try {
-				bw.write(entry.toXMLString());
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+			//Ajout à la map : 
+			treeMap.put(entry.getHash(), entry.toMapString());
 
 		}
 	}

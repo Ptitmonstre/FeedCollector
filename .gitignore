@@ -11,3 +11,8 @@
 /.metadata/
 /.settings/
 *.xml
+
+#Database files
+/db.out
+/db.out.p
+/db.out.t
