@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -128,7 +129,9 @@ public class FeedReader {
 					txtcontent = ArticleSentencesExtractor.INSTANCE.getText(txtcontent).trim().replaceAll(" +|\n", " ");						
 
 				}
-			} catch (Exception e2) {
+			}catch (ConnectException e2) {
+				 System.err.println("Connection timed out: couldn't read "+e.getLink());
+			}catch (Exception e2) {
 				e2.printStackTrace();
 			}
 			if(e.getSource()!=null){
@@ -153,12 +156,11 @@ public class FeedReader {
 				language = detector.detect();
 
 			} catch (LangDetectException e1) {
-				System.out.println("Couldnt detect the language");
-				e1.printStackTrace();
+				System.err.println("Couldnt detect the language");
 			}
 
 			MRIEntry entry = new MRIEntry(title, description, txtcontent, author, date, url_src, txt_src, language, copyright);
-			System.out.println(entry.toString());
+			System.out.println(entry.getHash()+" "+entry.getUrl_src());
 			//Ajout à la map : 
 			treeMap.put(entry.getHash(), entry.toMapString());
 

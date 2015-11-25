@@ -1,6 +1,13 @@
 import java.io.Serializable;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
+import javax.xml.bind.DatatypeConverter;
+
+import org.json.JSONObject;
+import org.json.JSONWriter;
 
 
 public class MRIEntry implements Serializable{
@@ -20,7 +27,7 @@ public class MRIEntry implements Serializable{
 	private String copyright;
 	private String hash;
 	private MessageDigest md;
-	
+
 	public MRIEntry(String title, String description, String content, String author, String date, String url_src, String txt_src,
 			String language, String copyright) {
 		super();
@@ -37,16 +44,16 @@ public class MRIEntry implements Serializable{
 			md = MessageDigest.getInstance("MD5");
 			//cryptage en md5. Cle choisie titre + url + langue
 			byte[] toBytes = md.digest((title+url_src+language).getBytes());
-			hash = toBytes.toString();
+			hash = DatatypeConverter.printHexBinary(toBytes);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public MRIEntry(String hash){
-		
+
 	}
-	
+
 	public String getTitle() {
 		return title;
 	}
@@ -107,39 +114,41 @@ public class MRIEntry implements Serializable{
 	public void setContent(String content) {
 		this.content = content;
 	}
-	
+
 	public String toString(){
 		String ret = "";
-		
+
 		ret += "{Hash : "+this.getHash()+"}";
 		ret += "{Title : "+this.getTitle();
 		ret += "\tLanguage : "+this.getLanguage();
 		ret += "\tLink : "+this.getUrl_src();
-//		ret += "\tDesc : "+this.getDescription();
+		//		ret += "\tDesc : "+this.getDescription();
 		ret += "\tAuthor : "+this.getAuthor();
 		ret += "\tText : "+this.getContent();
 		ret += "\tSources : "+this.getTxt_src();
 		ret += "\tDate : "+this.getDate();
 		ret += "\tCopyright : "+this.getCopyright()+"}";
-		
+
 		return ret;
 	}
-	
+
 	public String toMapString(){
-		String ret = "{";
-		
-		ret += "\n\t\"name\" : "+this.getHash();
-		ret += "\n\t\"title\" : "+this.getTitle();
-		ret += "\n\t\"language\" : "+this.getLanguage();
-		ret += "\n\t\"url_src\" : "+this.getUrl_src();
-		ret += "\n\t\"description\" : "+this.getDescription();
-		ret += "\n\t\"author\" : "+this.getAuthor();
-		ret += "\n\t\"content\" : "+this.getContent();
-		ret += "\n\t\"txt_src\" : "+this.getTxt_src();
-		ret += "\n\t\"date\" : "+this.getDate();
-		ret += "\n\t\"copyright\" : "+this.getCopyright()+"\n}";
-		
-		return ret;
+		StringWriter string=new StringWriter();
+		new JSONWriter(string)
+		.object()
+		.key("hash").value(hash)
+		.key("title").value(this.getTitle())
+		.key("language").value(this.getLanguage())
+		.key("url_src").value(this.url_src)
+		.key("description").value(description)
+		.key("author").value(author)
+		.key("content").value(content)
+		.key("txt_src").value(txt_src)
+		.key("date").value(date)
+		.key("copyright").value(copyright)
+		.endObject();
+
+		return string.toString();
 	}
-	
+
 }
