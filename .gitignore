@@ -4,8 +4,10 @@
 
 #Project files
 [Bb]uild/
-bin/
-target/
-db.xml
-.classpath
-.project
+*.classpath
+*.project
+[Bb]in/
+/target/
+/.metadata/
+/.settings/
+*.xml
