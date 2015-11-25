@@ -11,6 +11,7 @@
 /.metadata/
 /.settings/
 *.xml
+!pom.xml
 /db.out
 /db.out.p
 /db.out.t
